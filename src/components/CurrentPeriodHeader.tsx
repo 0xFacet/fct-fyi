@@ -82,10 +82,12 @@ export function CurrentPeriodHeader({ fctData, currentBlock, ethPrice }: Current
               <div className="bg-gray-900/40 border border-gray-800 rounded-xl p-3 sm:p-4">
                 <p className="text-xs text-gray-500 uppercase tracking-wider mb-1 sm:mb-2">Projected Total</p>
                 <p className="text-xl sm:text-2xl font-bold text-gray-100">
-                  {formatFct(projectedFinalMinted, { compactView: true, decimals: 1 })}
+                  {formatFct(projectedFinalMinted, { compactView: true, decimals: 1, showTiny: true })}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {Math.round(Number(projectedFinalMinted * 100n / currentTarget))}% of target
+                  {projectedFinalMinted > 0n && projectedFinalMinted < currentTarget / 1000n 
+                    ? '<0.1% of target'
+                    : `${Math.round(Number(projectedFinalMinted * 100n / currentTarget))}% of target`}
                 </p>
               </div>
             </div>

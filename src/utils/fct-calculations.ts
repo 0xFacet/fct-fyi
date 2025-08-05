@@ -122,12 +122,23 @@ export function predictRateAdjustment(
   }
 
   // Period in progress - project based on current pace
-  if (blocksElapsed === 0n || periodMinted === 0n) {
+  if (blocksElapsed === 0n) {
     return {
       newRate: mintRate,
       reason: 'projected-under',
       confidence: '0%',
       changePercent: 0
+    }
+  }
+
+  // If nothing minted so far, project maximum increase
+  if (periodMinted === 0n) {
+    const newRate = mintRate * BigInt(Math.floor(MAX_RATE_ADJUSTMENT_UP * 1000)) / 1000n
+    return {
+      newRate,
+      reason: 'projected-under',
+      confidence: `${Math.round(Number(blocksElapsed) / ADJUSTMENT_PERIOD_TARGET_LENGTH * 100)}%`,
+      changePercent: ((Number(newRate) / Number(mintRate)) - 1) * 100
     }
   }
 

@@ -31,9 +31,16 @@ export const compact = (value: number, dec = 1): string => {
 /* ---------- public API ---------- */
 export const formatFct = (
   wei: bigint,
-  { compactView = true, decimals = 1 } = {}
+  { compactView = true, decimals = 1, showTiny = false } = {}
 ): string => {
   const fct = weiToFct(wei)
+  
+  // For very small amounts, show more precision or indicate <0.001
+  if (showTiny && fct > 0 && fct < 0.001) {
+    if (fct < 0.000001) return '<0.000001 FCT'
+    return `${fct.toFixed(6)} FCT`
+  }
+  
   return compactView ? `${compact(fct, decimals)} FCT`
                      : `${numberFmt(decimals).format(fct)} FCT`
 }
