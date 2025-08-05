@@ -1,4 +1,4 @@
-export const L1_BLOCK_ADDRESS = '0x4200000000000000000000000000000000000015' as const
+export const L1_BLOCK_ADDRESS = '0x4200000000000000000000000000000000000015'
 
 export const FCT_DETAILS_ABI = [
   {
@@ -31,4 +31,4 @@ export const MAX_RATE_ADJUSTMENT_UP = 4
 export const MAX_RATE_ADJUSTMENT_DOWN = 0.25
 
 // Display constants
-export const BLOCKS_PER_SECOND = 0.5 // After slot halving
+export const BLOCKS_PER_SECOND = 1/12

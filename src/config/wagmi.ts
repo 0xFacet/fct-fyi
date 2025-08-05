@@ -6,18 +6,18 @@ const NETWORK = process.env.NEXT_PUBLIC_NETWORK || 'sepolia'
 const isMainnet = NETWORK === 'mainnet'
 
 const RPC_URLS = {
-  mainnet: 'https://mainnet.facet.org',
-  sepolia: 'https://sepolia.facet.org',
+  mainnet: process.env.NEXT_PUBLIC_RPC_URL_MAINNET || 'https://mainnet.facet.org',
+  sepolia: process.env.NEXT_PUBLIC_RPC_URL_SEPOLIA || 'https://sepolia.facet.org',
 }
 
 const EXPLORER_URLS = {
-  mainnet: 'https://explorer.facet.org',
-  sepolia: 'https://sepolia.explorer.facet.org',
+  mainnet: process.env.NEXT_PUBLIC_EXPLORER_URL_MAINNET || 'https://explorer.facet.org',
+  sepolia: process.env.NEXT_PUBLIC_EXPLORER_URL_SEPOLIA || 'https://sepolia.explorer.facet.org',
 }
 
 // Define Facet chain
 export const facet = {
-  id: 0xface7,
+  id: isMainnet ? 0xface7 : 0xface7a,
   name: isMainnet ? 'Facet' : 'Facet Sepolia',
   nativeCurrency: {
     decimals: 18,
@@ -40,7 +40,8 @@ export const facet = {
 export const wagmiConfig = createConfig({
   chains: [facet],
   transports: {
-    [facet.id]: http(RPC_URLS[NETWORK as keyof typeof RPC_URLS]),
+    [0xface7]: http(RPC_URLS.mainnet),
+    [0xface7a]: http(RPC_URLS.sepolia),
   },
 })
 
