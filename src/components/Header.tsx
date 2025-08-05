@@ -1,109 +1,63 @@
 import { useState, useEffect } from 'react'
-import { formatBlockNumber } from '@/utils/format'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, ExternalLink } from 'lucide-react'
 
 interface HeaderProps {
-  currentBlock: bigint
-  autoRefresh: number
-  onAutoRefreshChange: (seconds: number) => void
   onManualRefresh: () => void
 }
 
-const AUTO_REFRESH_OPTIONS = [
-  { label: 'Off', value: 0 },
-  { label: '5s', value: 5 },
-  { label: '10s', value: 10 },
-  { label: '30s', value: 30 },
-]
 
-export function Header({ currentBlock, autoRefresh, onAutoRefreshChange, onManualRefresh }: HeaderProps) {
-  const [countdown, setCountdown] = useState(autoRefresh)
+export function Header({ onManualRefresh }: HeaderProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const network = process.env.NEXT_PUBLIC_NETWORK === 'mainnet' ? 'Mainnet' : 'Sepolia'
 
   useEffect(() => {
-    if (autoRefresh === 0) {
-      setCountdown(0)
-      return
-    }
-
-    setCountdown(autoRefresh)
     const interval = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          return autoRefresh
-        }
-        return prev - 1
-      })
-    }, 1000)
+      onManualRefresh()
+    }, 30000)
 
     return () => clearInterval(interval)
-  }, [autoRefresh])
+  }, [onManualRefresh])
 
-  const handleManualRefresh = async () => {
+  const handleManualRefresh = () => {
     setIsRefreshing(true)
-    await onManualRefresh()
+    onManualRefresh()
     setTimeout(() => setIsRefreshing(false), 500)
   }
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md">
+    <header className="bg-gradient-to-b from-[#1e1f2a] to-[#1e1f2a]/95 backdrop-blur-xl border-b border-white/[0.08] sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <h1 className="text-2xl sm:text-3xl font-bold">
-            <span className="text-facet-blue">F</span>
-            <span className="text-gray-600 dark:text-gray-400">ore</span>
-            <span className="text-facet-blue">C</span>
-            <span className="text-gray-600 dark:text-gray-400">as</span>
-            <span className="text-facet-blue">T</span>
+          <h1 className="text-2xl font-bold">
+            <span className="bg-gradient-to-r from-violet-500 to-blue-400 bg-clip-text text-transparent">FCT</span>
+            <span className="text-gray-500 font-normal">.fyi</span>
           </h1>
 
           {/* Controls */}
-          <div className="flex items-center gap-4">
-            {/* Network Badge */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
-              <div className={`w-2 h-2 rounded-full ${network === 'Mainnet' ? 'bg-green-500' : 'bg-yellow-500'}`} />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{network}</span>
-            </div>
+          <div className="flex items-center gap-3">
+            {/* What is FCT Link */}
+            <a
+              href="https://docs.facet.org/native-gas-token/introduction"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/[0.06] rounded-xl text-gray-400 hover:bg-white/[0.05] hover:border-white/[0.1] hover:text-white transition-all text-sm font-medium"
+              aria-label="What is FCT?"
+            >
+              <span>What is FCT?</span>
+              <ExternalLink className="w-4 h-4 opacity-70" />
+            </a>
 
-            {/* Block Number */}
-            {currentBlock > 0n && (
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Block: <span className="font-mono font-medium">{formatBlockNumber(currentBlock)}</span>
-              </div>
-            )}
-
-            {/* Auto Refresh */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleManualRefresh}
-                className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all ${
-                  isRefreshing ? 'animate-spin' : ''
-                }`}
-                disabled={isRefreshing}
-              >
-                <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-              </button>
-
-              <select
-                value={autoRefresh}
-                onChange={(e) => onAutoRefreshChange(Number(e.target.value))}
-                className="text-sm px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-facet-blue"
-              >
-                {AUTO_REFRESH_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-
-              {autoRefresh > 0 && (
-                <div className="text-xs text-gray-500 dark:text-gray-400 min-w-[20px]">
-                  {countdown}s
-                </div>
-              )}
-            </div>
+            {/* Refresh Button */}
+            <button
+              onClick={handleManualRefresh}
+              className={`w-10 h-10 flex items-center justify-center bg-white/[0.03] border border-white/[0.06] rounded-xl text-gray-400 hover:bg-white/[0.05] hover:border-white/[0.1] hover:rotate-180 transition-all duration-300 ${
+                isRefreshing ? 'animate-spin' : ''
+              }`}
+              disabled={isRefreshing}
+              aria-label="Refresh data"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>

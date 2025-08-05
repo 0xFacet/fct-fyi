@@ -40,7 +40,7 @@ export const formatFct = (
 
 export const formatEth = (
   wei: bigint,
-  { compactView = false, decimalsLarge = 2, decimalsSmall = 4 } = {}
+  { decimalsLarge = 2, decimalsSmall = 4 } = {}
 ): string => {
   const eth = weiToEth(wei)
   if (eth === 0) return '0 ETH'

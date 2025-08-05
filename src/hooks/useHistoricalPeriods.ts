@@ -12,11 +12,16 @@ export interface HistoricalPeriod {
   minted: bigint
   target: bigint
   mintedPercent: number
-  reason: 'over' | 'under'
+  reason: 'over' | 'under' | 'multiple' // 'multiple' for intra-block periods
   oldRate: bigint
   newRate: bigint
   rateChangePct: number
   halvingLevel: number
+  intraBlockPeriods: boolean // True if multiple periods occurred in same block
+  totalMintedInBlock?: bigint // Total minted if intra-block periods detected
+  totalSupply: bigint // Total supply at the END of this period
+  prevTotalSupply?: bigint // Total supply at the END of the previous period
+  hiddenMint?: bigint // Hidden minting that occurred between periods
 }
 
 interface FetchHistoricalPeriodsParams {
@@ -52,11 +57,49 @@ async function fetchHistoricalPeriods({
       // Calculate how many blocks the period lasted using the ACTUAL periodStartBlock
       const blocksLasted = Number(prevPeriodEndBlock - prevDetails.periodStartBlock + 1n)
       
-      // A period ended early (target hit) if:
-      // 1. It lasted < 500 blocks AND
-      // 2. Some FCT was actually minted (guards against 0-mint edge cases)
-      const reason = (blocksLasted < ADJUSTMENT_PERIOD_TARGET_LENGTH && prevDetails.periodMinted > 0n)
-        ? 'over' : 'under'
+      // Detect intra-block periods by checking if the rate changed dramatically
+      // Compare the rate that would be set AFTER prevDetails period ended
+      // with the rate we see at the start of headDetails period
+      // A huge rate drop (>75%) usually indicates multiple periods happened in one block
+      const rateDropPercent = headDetails.mintRate > prevDetails.mintRate 
+        ? 0  // Rate increased, not a drop
+        : prevDetails.mintRate > 0n
+        ? Number(((prevDetails.mintRate - headDetails.mintRate) * 100n) / prevDetails.mintRate)
+        : 0
+      
+      // If rate dropped by more than 75%, likely multiple periods in one block
+      // Each over-issuance can drop rate by up to 75% (to 0.25x)
+      // So a drop to 0.25^n indicates n periods
+      const intraBlockPeriods = rateDropPercent > 75
+      
+      // Estimate how many periods based on rate drop
+      let estimatedPeriods = 1
+      if (intraBlockPeriods && prevDetails.mintRate > 0n) {
+        // Each 4x drop means one over-issuance period
+        const rateRatio = Number(prevDetails.mintRate) / Number(headDetails.mintRate)
+        estimatedPeriods = Math.max(1, Math.round(Math.log(rateRatio) / Math.log(4)))
+      }
+      
+      // Determine reason for period end
+      let reason: 'over' | 'under' | 'multiple'
+      if (intraBlockPeriods) {
+        reason = 'multiple' // Multiple periods in same block
+      } else if (blocksLasted < ADJUSTMENT_PERIOD_TARGET_LENGTH && prevDetails.periodMinted > 0n) {
+        reason = 'over' // Hit target
+      } else {
+        reason = 'under' // Timeout
+      }
+      
+      // Log extreme rate changes for debugging
+      if (rateDropPercent > 90) {
+        console.log(`Extreme rate change detected:`, {
+          block: prevPeriodEndBlock,
+          oldRate: prevDetails.mintRate.toString(),
+          newRate: headDetails.mintRate.toString(),
+          dropPercent: rateDropPercent,
+          estimatedPeriods
+        })
+      }
       
       // Calculate the rate change percentage
       const rateChangePct = prevDetails.mintRate === 0n ? 0 :
@@ -65,6 +108,9 @@ async function fetchHistoricalPeriods({
       // Calculate minted percentage of target
       const mintedPercent = target > 0n ? 
         Number((prevDetails.periodMinted * 10000n) / target) / 100 : 0
+      
+      // Calculate hidden mint (minting that happened between periods)
+      const hiddenMint = headDetails.totalMinted - headDetails.periodMinted - prevDetails.totalMinted
       
       periods.push({
         periodNumber: 0, // Will be set later based on position
@@ -79,6 +125,10 @@ async function fetchHistoricalPeriods({
         newRate: headDetails.mintRate,
         rateChangePct,
         halvingLevel,
+        intraBlockPeriods,
+        totalMintedInBlock: intraBlockPeriods ? prevDetails.periodMinted * BigInt(estimatedPeriods) : undefined,
+        totalSupply: prevDetails.totalMinted, // Total supply at END of this period
+        hiddenMint: hiddenMint > 0n ? hiddenMint : undefined // Minting between periods
       })
       
       // Step back one period using the ACTUAL start block we just fetched

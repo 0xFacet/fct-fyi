@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useReadContract } from 'wagmi'
 import { L1_BLOCK_ADDRESS, FCT_DETAILS_ABI } from '@/constants/fct'
 import { useCurrentBlock } from '@/hooks/useCurrentBlock'
@@ -12,13 +12,13 @@ import { CurrentPeriodHeader } from '@/components/CurrentPeriodHeader'
 import { PeriodHistoryCards } from '@/components/PeriodHistoryCards'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { Zap, History, Gem } from 'lucide-react'
+import { getCurrentTarget, getHalvingLevel } from '@/utils/fct-calculations'
+import { weiToFct, formatFct } from '@/utils/format'
 
 export default function Home() {
-  const [autoRefresh, setAutoRefresh] = useState(10)
-
-  // Fetch current block
+  // Fetch current block with 30 second refresh
   const { currentBlock, isLoading: blockLoading } = useCurrentBlock(
-    autoRefresh > 0 ? autoRefresh * 1000 : undefined
+    30 * 1000
   )
 
   // Fetch FCT data
@@ -31,16 +31,14 @@ export default function Home() {
   // Fetch external data (ETH price)
   const { ethPrice } = useExternalData()
 
-  // Auto-refresh FCT data
+  // Auto-refresh FCT data every 30 seconds
   useEffect(() => {
-    if (autoRefresh === 0) return
-
     const interval = setInterval(() => {
       refetch()
-    }, autoRefresh * 1000)
+    }, 30 * 1000)
 
     return () => clearInterval(interval)
-  }, [autoRefresh, refetch])
+  }, [refetch])
 
   // Manual refresh
   const handleManualRefresh = async () => {
@@ -51,11 +49,8 @@ export default function Home() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-[#0a0a0f]">
         <Header
-          currentBlock={0n}
-          autoRefresh={autoRefresh}
-          onAutoRefreshChange={setAutoRefresh}
           onManualRefresh={handleManualRefresh}
         />
         <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-8">
@@ -79,11 +74,8 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-[#0a0a0f]">
       <Header
-        currentBlock={currentBlock}
-        autoRefresh={autoRefresh}
-        onAutoRefreshChange={setAutoRefresh}
         onManualRefresh={handleManualRefresh}
       />
 
@@ -104,7 +96,10 @@ export default function Home() {
                 title="Current Period" 
                 icon={<Zap className="w-5 h-5" />} 
                 defaultOpen={true}
-                description="FCT minting periods end when either 500 blocks elapse OR the target issuance (78.2k FCT) is reached - whichever happens first. The mint rate then adjusts based on actual vs. target performance, increasing up to 4× if under-target or decreasing to 0.25× if over-target."
+                description={fctDetails ? 
+                  `FCT minting periods end when either 500 blocks elapse OR the target issuance (${formatFct(getCurrentTarget(fctDetails.initialTargetPerPeriod, getHalvingLevel(fctDetails.totalMinted, fctDetails.maxSupply)), { compactView: true })}) is reached - whichever happens first. The mint rate then adjusts based on actual vs. target performance, increasing up to 4× if under-target or decreasing to 0.25× if over-target.` :
+                  `FCT minting periods end when either 500 blocks elapse OR the target issuance is reached - whichever happens first. The mint rate then adjusts based on actual vs. target performance, increasing up to 4× if under-target or decreasing to 0.25× if over-target.`
+                }
               >
                 <CurrentPeriodHeader 
                   fctData={fctDetails}
@@ -134,7 +129,10 @@ export default function Home() {
                 title="Total Supply & Halvings" 
                 icon={<Gem className="w-5 h-5" />} 
                 defaultOpen={true}
-                description="FCT has a deterministic maximum supply cap of 1.64B tokens. Supply follows Bitcoin-style halvings where issuance targets reduce by 50% at specific thresholds, ensuring predictable and decreasing inflation over time."
+                description={fctDetails ?
+                  `FCT has a deterministic maximum supply cap of ${(weiToFct(fctDetails.maxSupply) / 1e9).toFixed(2)}B tokens. Supply follows Bitcoin-style halvings where issuance targets reduce by 50% at specific thresholds, ensuring predictable and decreasing inflation over time.` :
+                  `FCT has a deterministic maximum supply cap. Supply follows Bitcoin-style halvings where issuance targets reduce by 50% at specific thresholds, ensuring predictable and decreasing inflation over time.`
+                }
               >
                 <SupplyOverview fctData={fctDetails} currentBlock={currentBlock} />
               </CollapsibleSection>
