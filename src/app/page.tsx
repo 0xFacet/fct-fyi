@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { useReadContract } from 'wagmi'
-import { L1_BLOCK_ADDRESS, FCT_DETAILS_ABI, ADJUSTMENT_PERIOD_TARGET_LENGTH } from '@/constants/fct'
+import { L1_BLOCK_ADDRESS, FCT_DETAILS_ABI } from '@/constants/fct'
 import { useCurrentBlock } from '@/hooks/useCurrentBlock'
 import { useExternalData } from '@/hooks/useExternalData'
-import { getCurrentTarget, getHalvingLevel } from '@/utils/fct-calculations'
 import { Header } from '@/components/Header'
 import { SupplyOverview } from '@/components/SupplyOverview'
 import { RateAdjustmentForecast } from '@/components/RateAdjustmentForecast'
 import { CurrentPeriodHeader } from '@/components/CurrentPeriodHeader'
-import { HistoricalChart } from '@/components/HistoricalChart'
+import { PeriodHistoryCards } from '@/components/PeriodHistoryCards'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
-import { Clock, ChartBar, Info, BarChart3 } from 'lucide-react'
+import { Zap, History, Gem } from 'lucide-react'
 
 export default function Home() {
   const [autoRefresh, setAutoRefresh] = useState(10)
@@ -98,33 +97,45 @@ export default function Home() {
           </div>
         ) : fctDetails ? (
           <div className="space-y-6">
-            {/* Current Period Header - Always visible */}
-            <CurrentPeriodHeader 
-              fctData={fctDetails}
-              currentBlock={currentBlock}
-              ethPrice={ethPrice}
-            />
-
             {/* Collapsible Sections */}
             <div className="space-y-2">
-              {/* Forecasted Issuance */}
-              <CollapsibleSection title="Forecasted FCT Issuance" icon={<ChartBar />} defaultOpen={true}>
-                <RateAdjustmentForecast fctData={fctDetails} currentBlock={currentBlock} />
+              {/* Current Period */}
+              <CollapsibleSection 
+                title="Current Period" 
+                icon={<Zap className="w-5 h-5" />} 
+                defaultOpen={true}
+                description="FCT minting periods end when either 500 blocks elapse OR the target issuance (78.2k FCT) is reached - whichever happens first. The mint rate then adjusts based on actual vs. target performance, increasing up to 4× if under-target or decreasing to 0.25× if over-target."
+              >
+                <CurrentPeriodHeader 
+                  fctData={fctDetails}
+                  currentBlock={currentBlock}
+                  ethPrice={ethPrice}
+                />
+                <div className="mt-6">
+                  <RateAdjustmentForecast fctData={fctDetails} currentBlock={currentBlock} />
+                </div>
               </CollapsibleSection>
 
-              {/* Historical Chart */}
-              <CollapsibleSection title="Past FCT Issuance" icon={<BarChart3 />} defaultOpen={true}>
-                <HistoricalChart 
+              {/* Recent Period History */}
+              <CollapsibleSection 
+                title="Recent Period History" 
+                icon={<History className="w-5 h-5" />} 
+                defaultOpen={true}
+                description="Historical FCT issuance by period. Green badges indicate periods that hit their target issuance early, while gray badges show periods that timed out after 500 blocks. Rate adjustments depend on how each period ended."
+              >
+                <PeriodHistoryCards 
                   currentBlock={currentBlock}
                   fctData={fctDetails}
-                  currentPeriod={currentBlock / BigInt(ADJUSTMENT_PERIOD_TARGET_LENGTH) + 1n}
-                  currentIssued={fctDetails.periodMinted}
-                  currentTarget={getCurrentTarget(fctDetails.initialTargetPerPeriod, getHalvingLevel(fctDetails.totalMinted, fctDetails.maxSupply))}
                 />
               </CollapsibleSection>
 
-              {/* Supply Information */}
-              <CollapsibleSection title="Total Supply Information" icon={<Clock />} defaultOpen={true}>
+              {/* Total Supply & Halvings */}
+              <CollapsibleSection 
+                title="Total Supply & Halvings" 
+                icon={<Gem className="w-5 h-5" />} 
+                defaultOpen={true}
+                description="FCT has a deterministic maximum supply cap of 1.64B tokens. Supply follows Bitcoin-style halvings where issuance targets reduce by 50% at specific thresholds, ensuring predictable and decreasing inflation over time."
+              >
                 <SupplyOverview fctData={fctDetails} currentBlock={currentBlock} />
               </CollapsibleSection>
             </div>

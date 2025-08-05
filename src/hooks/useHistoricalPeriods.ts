@@ -29,66 +29,45 @@ async function fetchHistoricalPeriods({
   currentDetails,
   periodsToFetch
 }: Omit<FetchHistoricalPeriodsParams, 'currentBlock'>): Promise<HistoricalPeriod[]> {
-  // Build list of blocks to fetch
-  const blocksToFetch: bigint[] = []
-  let headDetails = currentDetails
+  const periods: HistoricalPeriod[] = []
+  let headDetails = currentDetails // Start with current period details
   
   for (let i = 0; i < periodsToFetch; i++) {
     const prevPeriodEndBlock = headDetails.periodStartBlock - 1n
     if (prevPeriodEndBlock <= 0n) break
-    blocksToFetch.push(prevPeriodEndBlock)
-    
-    // Estimate the previous period start (may be off, but good enough for iteration)
-    const estimatedPrevStart = prevPeriodEndBlock - BigInt(ADJUSTMENT_PERIOD_TARGET_LENGTH) + 1n
-    headDetails = { ...headDetails, periodStartBlock: estimatedPrevStart }
-  }
-  
-  // Fetch all historical data in parallel
-  const fetchPromises = blocksToFetch.map(blockNumber => 
-    readContract(wagmiConfig, {
-      address: L1_BLOCK_ADDRESS,
-      abi: FCT_DETAILS_ABI,
-      functionName: 'fctDetails',
-      blockNumber,
-    }) as Promise<FctDetails>
-  )
-  
-  const historicalDetails = await Promise.all(fetchPromises)
-  
-  // Process the results
-  const periods: HistoricalPeriod[] = []
-  headDetails = currentDetails
-  
-  for (let i = 0; i < historicalDetails.length; i++) {
-    const prevDetails = historicalDetails[i]
-    const prevPeriodEndBlock = blocksToFetch[i]
     
     try {
+      // Fetch the REAL snapshot at the end of the previous period
+      const prevDetails = await readContract(wagmiConfig, {
+        address: L1_BLOCK_ADDRESS,
+        abi: FCT_DETAILS_ABI,
+        functionName: 'fctDetails',
+        blockNumber: prevPeriodEndBlock,
+      }) as FctDetails
       
       // Calculate the target for that period
       const halvingLevel = getHalvingLevel(prevDetails.totalMinted, prevDetails.maxSupply)
       const target = getCurrentTarget(prevDetails.initialTargetPerPeriod, halvingLevel)
       
-      // Calculate how many blocks the period lasted
+      // Calculate how many blocks the period lasted using the ACTUAL periodStartBlock
       const blocksLasted = Number(prevPeriodEndBlock - prevDetails.periodStartBlock + 1n)
       
-      // A period that ran < 500 blocks ended because the target was reached
-      // (even if periodMinted shows < 100% due to mid-transaction splitting)
-      const reason = blocksLasted < ADJUSTMENT_PERIOD_TARGET_LENGTH ? 'over' : 'under'
+      // A period ended early (target hit) if:
+      // 1. It lasted < 500 blocks AND
+      // 2. Some FCT was actually minted (guards against 0-mint edge cases)
+      const reason = (blocksLasted < ADJUSTMENT_PERIOD_TARGET_LENGTH && prevDetails.periodMinted > 0n)
+        ? 'over' : 'under'
       
       // Calculate the rate change percentage
-      const rateChangePct = headDetails.mintRate === 0n ? 0 :
+      const rateChangePct = prevDetails.mintRate === 0n ? 0 :
         Number(((headDetails.mintRate - prevDetails.mintRate) * 10000n) / prevDetails.mintRate) / 100
       
       // Calculate minted percentage of target
       const mintedPercent = target > 0n ? 
         Number((prevDetails.periodMinted * 10000n) / target) / 100 : 0
       
-      // We'll use index instead of trying to calculate period number
-      const periodNumber = 0 // Will be set later based on position
-      
       periods.push({
-        periodNumber,
+        periodNumber: 0, // Will be set later based on position
         periodStart: prevDetails.periodStartBlock,
         periodEnd: prevPeriodEndBlock,
         blocksLasted,
@@ -102,12 +81,13 @@ async function fetchHistoricalPeriods({
         halvingLevel,
       })
       
-      // Move to the previous period
+      // Step back one period using the ACTUAL start block we just fetched
       headDetails = prevDetails
       
     } catch (error) {
       console.error(`Failed to fetch period ending at block ${prevPeriodEndBlock}:`, error)
       // Continue trying to fetch earlier periods
+      break // Stop if we hit an error (likely before contract deployment)
     }
   }
   

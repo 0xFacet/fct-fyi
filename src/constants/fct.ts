@@ -31,4 +31,4 @@ export const MAX_RATE_ADJUSTMENT_UP = 4
 export const MAX_RATE_ADJUSTMENT_DOWN = 0.25
 
 // Display constants
-export const BLOCKS_PER_SECOND = 1/12
+export const SECONDS_PER_BLOCK = 12

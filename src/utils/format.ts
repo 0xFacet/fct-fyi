@@ -58,6 +58,19 @@ export const formatRate = (
   return `${compact(rateNum, decimals)} FCT/ETH`
 }
 
+export const formatCostPerFct = (mintRate: bigint, ethPrice: number): string => {
+  if (ethPrice === 0 || mintRate === 0n) return 'N/A'
+  
+  // mintRate is FCT per ETH, so 1 FCT costs 1/mintRate ETH
+  const ethPerFct = 1 / Number(mintRate)
+  const costPerFct = ethPerFct * ethPrice
+  
+  if (costPerFct < 0.000001) return '<$0.000001'
+  if (costPerFct < 0.01) return `$${costPerFct.toFixed(6)}`
+  if (costPerFct < 1) return `$${costPerFct.toFixed(4)}`
+  return `$${costPerFct.toFixed(2)}`
+}
+
 export const formatPercentage = (
   pct: number,
   { decimals = 1, showSign = true } = {}
