@@ -7,11 +7,44 @@ interface TotalSupplyChartProps {
 }
 
 export function TotalSupplyChart({ currentBlock }: TotalSupplyChartProps) {
-  const { data, isLoading } = useTotalSupplySamples(currentBlock, 10)
-
-  if (isLoading || !data || data.length === 0) {
+  const { data, isLoading, error } = useTotalSupplySamples(currentBlock, 10)
+  
+  if (isLoading) {
     return (
-      <div className="h-40 bg-gray-50 dark:bg-gray-900 rounded animate-pulse" />
+      <div className="mt-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Total Supply Growth
+        </h3>
+        <div className="h-40 bg-gray-50 dark:bg-gray-900 rounded animate-pulse" />
+      </div>
+    )
+  }
+
+  // Only show error if we have no data at all
+  if (error && (!data || data.length === 0)) {
+    return (
+      <div className="mt-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Total Supply Growth
+        </h3>
+        <div className="h-40 bg-gray-50 dark:bg-gray-900 rounded flex items-center justify-center">
+          <p className="text-sm text-gray-500">Unable to load chart data</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render chart if we have less than 2 data points
+  if (!data || data.length < 2) {
+    return (
+      <div className="mt-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Total Supply Growth
+        </h3>
+        <div className="h-40 bg-gray-50 dark:bg-gray-900 rounded flex items-center justify-center">
+          <p className="text-sm text-gray-500">Insufficient data for chart</p>
+        </div>
+      </div>
     )
   }
 

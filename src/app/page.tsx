@@ -124,72 +124,9 @@ export default function Home() {
               </CollapsibleSection>
 
               {/* Supply Information */}
-              <CollapsibleSection title="Total Supply Information" icon={<Clock />} defaultOpen={false}>
-                <SupplyOverview fctData={fctDetails} />
+              <CollapsibleSection title="Total Supply Information" icon={<Clock />} defaultOpen={true}>
+                <SupplyOverview fctData={fctDetails} currentBlock={currentBlock} />
               </CollapsibleSection>
-
-              {/* Additional Information */}
-              <CollapsibleSection title="Additional Information" icon={<Info />} defaultOpen={false}>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Issuance Metrics */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-100">
-                    Issuance Metrics
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Issuance Pace</span>
-                      <span className="text-gray-800 dark:text-gray-200">-2.3% (slightly behind)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Time to Max Supply</span>
-                      <span className="text-gray-800 dark:text-gray-200">~5.2 years</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Stats */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-100">
-                    Quick Stats
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Network</span>
-                      <span className="text-gray-800 dark:text-gray-200">
-                        {process.env.NEXT_PUBLIC_NETWORK === 'mainnet' ? 'Mainnet' : 'Sepolia'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Contract</span>
-                      <span className="font-mono text-xs text-gray-800 dark:text-gray-200">
-                        {L1_BLOCK_ADDRESS.slice(0, 6)}...{L1_BLOCK_ADDRESS.slice(-4)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Developer Info */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-gray-100">
-                    Developer Info
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <a
-                      href={`https://explorer.facet.org/address/${L1_BLOCK_ADDRESS}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-facet-blue hover:underline"
-                    >
-                      View Contract ↗
-                    </a>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Method: fctDetails()
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CollapsibleSection>
             </div>
           </div>
         ) : (

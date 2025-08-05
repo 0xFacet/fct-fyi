@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { readContract } from '@wagmi/core'
-import { wagmiConfig } from '@/config/wagmi'
+import { usePublicClient } from 'wagmi'
 import { L1_BLOCK_ADDRESS, FCT_DETAILS_ABI } from '@/constants/fct'
 import { formatBlockNumber } from '@/utils/format'
 import { FctDetails } from '@/utils/fct-calculations'
@@ -11,8 +10,8 @@ interface SupplyPoint {
   totalMinted: bigint        // wei
 }
 
-const fetchSamples = async (currentBlock: bigint, points = 10): Promise<SupplyPoint[]> => {
-  if (currentBlock === 0n) return []
+const fetchSamples = async (publicClient: ReturnType<typeof usePublicClient>, currentBlock: bigint, points = 10): Promise<SupplyPoint[]> => {
+  if (!publicClient || currentBlock === 0n) return []
   
   // Calculate step size, round to 500 blocks
   const rawStep = currentBlock / BigInt(points - 1)
@@ -26,31 +25,41 @@ const fetchSamples = async (currentBlock: bigint, points = 10): Promise<SupplyPo
     }
   }
 
-  // Parallel RPC calls
-  const calls = blocks.map(block =>
-    readContract(wagmiConfig, {
-      address: L1_BLOCK_ADDRESS,
-      abi: FCT_DETAILS_ABI,
-      functionName: 'fctDetails',
-      blockNumber: block,
-    }).then((d: FctDetails) => ({
-      block,
-      blockLabel: formatBlockNumber(block),
-      totalMinted: d.totalMinted,
-    }))
+  // Try to fetch data for each block, handling failures gracefully
+  const results = await Promise.all(
+    blocks.map(block =>
+      publicClient.readContract({
+        address: L1_BLOCK_ADDRESS,
+        abi: FCT_DETAILS_ABI,
+        functionName: 'fctDetails',
+        blockNumber: block,
+      }).then((d: FctDetails) => ({
+        block,
+        blockLabel: formatBlockNumber(block),
+        totalMinted: d.totalMinted,
+      }))
+    )
   )
 
-  return Promise.all(calls)
+  // Filter out failed requests (likely from blocks before contract deployment)
+  const successfulSamples = results
+  return successfulSamples
 }
 
 export const useTotalSupplySamples = (
   currentBlock: bigint,
-  samplePoints = 10
-) =>
-  useQuery({
-    queryKey: ['totalSupplySamples', samplePoints, currentBlock.toString()],
-    queryFn: () => fetchSamples(currentBlock, samplePoints),
-    enabled: currentBlock > 0n,
+  samplePoints = 3
+) => {
+  const publicClient = usePublicClient()
+  
+  // Round currentBlock to nearest 500 to prevent unnecessary refetches
+  const roundedBlock = currentBlock > 0n ? ((currentBlock / 500n) * 500n) : 0n
+  
+  return useQuery({
+    queryKey: ['totalSupplySamples', samplePoints, roundedBlock.toString()],
+    queryFn: () => fetchSamples(publicClient, currentBlock, samplePoints),
+    enabled: currentBlock > 0n && !!publicClient,
     staleTime: 10 * 60 * 1000, // 10 min
     gcTime: 60 * 60 * 1000,
   })
+}
