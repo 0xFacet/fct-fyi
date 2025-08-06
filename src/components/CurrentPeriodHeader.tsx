@@ -85,7 +85,7 @@ export function CurrentPeriodHeader({ fctData, currentBlock, ethPrice }: Current
                   {formatFct(projectedFinalMinted, { compactView: true, decimals: 1, showTiny: true })}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {projectedFinalMinted > 0n && projectedFinalMinted < currentTarget / 1000n 
+                  {projectedFinalMinted > 0n && projectedFinalMinted * 1000n < currentTarget
                     ? '<0.1% of target'
                     : `${Math.round(Number(projectedFinalMinted * 100n / currentTarget))}% of target`}
                 </p>
