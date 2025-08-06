@@ -60,7 +60,7 @@ export function PeriodCompletionRace({ fctData, currentBlock, currentTarget }: P
               FCT Minted
             </span>
             <span className="text-sm text-gray-300 font-medium tabular-nums">
-              {formatFct(periodMinted, { compactView: true, decimals: 1 }).replace(' FCT', '')} / {formatFct(currentTarget, { compactView: true, decimals: 1 }).replace(' FCT', '')}
+              {formatFct(periodMinted, { compactView: true, decimals: 1, showTiny: true }).replace(' FCT', '')} / {formatFct(currentTarget, { compactView: true, decimals: 1 }).replace(' FCT', '')}
             </span>
           </div>
           <div className="relative h-3 bg-gray-900/80 rounded-full overflow-hidden">
