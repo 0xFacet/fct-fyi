@@ -111,7 +111,7 @@ export function SupplyOverview({ fctData, currentBlock }: SupplyOverviewProps) {
           {Math.round(maxSupplyFct).toLocaleString()} FCT
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          Maximum Supply Cap
+          Maximum Supply
         </p>
       </div>
 

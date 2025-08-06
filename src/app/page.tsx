@@ -97,8 +97,8 @@ export default function Home() {
                 icon={<Zap className="w-5 h-5" />} 
                 defaultOpen={true}
                 description={fctDetails ? 
-                  `FCT minting periods end when either 500 blocks elapse OR the target issuance (${formatFct(getCurrentTarget(fctDetails.initialTargetPerPeriod, getHalvingLevel(fctDetails.totalMinted, fctDetails.maxSupply)), { compactView: true })}) is reached - whichever happens first. The mint rate then adjusts based on actual vs. target performance, increasing up to 4× if under-target or decreasing to 0.25× if over-target.` :
-                  `FCT minting periods end when either 500 blocks elapse OR the target issuance is reached - whichever happens first. The mint rate then adjusts based on actual vs. target performance, increasing up to 4× if under-target or decreasing to 0.25× if over-target.`
+                  `Facet Compute Token (FCT) minting periods end when either 500 blocks elapse OR the target issuance (${formatFct(getCurrentTarget(fctDetails.initialTargetPerPeriod, getHalvingLevel(fctDetails.totalMinted, fctDetails.maxSupply)), { compactView: true })}) is reached - whichever happens first. The mint rate then adjusts based on actual vs. target performance, increasing up to 4× if under-target or decreasing to 0.25× if over-target.` :
+                  `Facet Compute Token (FCT) minting periods end when either 500 blocks elapse OR the target issuance is reached - whichever happens first. The mint rate then adjusts based on actual vs. target performance, increasing up to 4× if under-target or decreasing to 0.25× if over-target.`
                 }
               >
                 <CurrentPeriodHeader 
@@ -130,7 +130,7 @@ export default function Home() {
                 icon={<Gem className="w-5 h-5" />} 
                 defaultOpen={true}
                 description={fctDetails ?
-                  `FCT has a deterministic maximum supply cap of ${(weiToFct(fctDetails.maxSupply) / 1e9).toFixed(2)}B tokens. Supply follows Bitcoin-style halvings where issuance targets reduce by 50% at specific thresholds, ensuring predictable and decreasing inflation over time.` :
+                  `FCT has a maximum supply of ${(weiToFct(fctDetails.maxSupply) / 1e9).toFixed(2)}B tokens. Supply follows Bitcoin-style halvings where issuance targets reduce by 50% at specific thresholds, ensuring predictable and decreasing inflation over time.` :
                   `FCT has a deterministic maximum supply cap. Supply follows Bitcoin-style halvings where issuance targets reduce by 50% at specific thresholds, ensuring predictable and decreasing inflation over time.`
                 }
               >
