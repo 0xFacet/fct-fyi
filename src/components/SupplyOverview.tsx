@@ -147,7 +147,7 @@ export function SupplyOverview({ fctData, currentBlock }: SupplyOverviewProps) {
       <div className="bg-gradient-to-br from-purple-900/20 to-indigo-900/10 border border-purple-800/30 rounded-xl p-6 mb-8">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-base font-semibold text-gray-100 flex items-center gap-2">
-            📊 {halvingThresholds[Math.min(halvingLevel, halvingThresholds.length - 1)].name} Progress
+            📊 Current Halving Period Progress
           </h3>
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
             isBehind ? 'bg-red-900/30 border border-red-700/50 text-red-400' :
