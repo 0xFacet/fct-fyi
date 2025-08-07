@@ -116,7 +116,7 @@ export default function Home() {
                 title="Recent Period History" 
                 icon={<History className="w-5 h-5" />} 
                 defaultOpen={true}
-                description="Historical FCT issuance by period. Green badges indicate periods that hit their target issuance early, while gray badges show periods that timed out after 500 blocks. Rate adjustments depend on how each period ended."
+                description="Historical FCT issuance by period. Rate adjustments depend on how each period ended."
               >
                 <PeriodHistoryCards 
                   currentBlock={currentBlock}
