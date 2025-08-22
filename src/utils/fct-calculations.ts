@@ -63,6 +63,140 @@ export function getBlocksUntilNextHalving(totalMinted: bigint, maxSupply: bigint
   return supplyToNextHalving * estimatedBlocksPerFCT
 }
 
+// Deterministically calculate what periods occurred in a block based on mining amounts
+export function calculatePeriodsInBlock(
+  blockMined: bigint,
+  periodStartRate: bigint,
+  periodStartMinted: bigint,
+  periodStartBlock: bigint,
+  blockNumber: bigint,
+  currentTarget: bigint
+): {
+  periods: Array<{
+    minted: bigint;
+    rate: bigint;
+    newRate: bigint;
+    hitTarget: boolean;
+    blocksElapsed: bigint;
+  }>;
+  remainingForNextPeriod: bigint;
+} {
+  const periods: Array<{
+    minted: bigint;
+    rate: bigint;
+    newRate: bigint;
+    hitTarget: boolean;
+    blocksElapsed: bigint;
+  }> = [];
+
+  let remainingToMine = blockMined;
+  let currentRate = periodStartRate;
+  let currentMinted = periodStartMinted;
+  let currentBlocksElapsed = blockNumber - periodStartBlock;
+
+  while (remainingToMine > 0n) {
+    const remainingToTarget =
+      currentTarget > currentMinted ? currentTarget - currentMinted : 0n;
+
+    if (remainingToTarget > 0n && remainingToMine >= remainingToTarget) {
+      // Period completes by hitting target
+      const newRate = calculateRateAdjustment(
+        currentRate,
+        currentBlocksElapsed,
+        true
+      );
+
+      periods.push({
+        minted: remainingToTarget,
+        rate: currentRate,
+        newRate,
+        hitTarget: true,
+        blocksElapsed: currentBlocksElapsed,
+      });
+
+      remainingToMine -= remainingToTarget;
+      currentRate = newRate;
+      currentMinted = 0n;
+      currentBlocksElapsed = 0n;
+    } else {
+      // Period continues or completes by timeout
+      const minedInPeriod = remainingToMine;
+      const newMinted = currentMinted + minedInPeriod;
+
+      if (currentBlocksElapsed >= BigInt(ADJUSTMENT_PERIOD_TARGET_LENGTH)) {
+        // Period completes by timeout
+        const newRate = calculateRateAdjustment(
+          currentRate,
+          currentBlocksElapsed,
+          false,
+          newMinted,
+          currentTarget
+        );
+
+        periods.push({
+          minted: minedInPeriod,
+          rate: currentRate,
+          newRate,
+          hitTarget: false,
+          blocksElapsed: currentBlocksElapsed,
+        });
+
+        remainingToMine = 0n;
+        currentMinted = 0n;
+      } else {
+        // Period continues
+        periods.push({
+          minted: minedInPeriod,
+          rate: currentRate,
+          newRate: currentRate,
+          hitTarget: false,
+          blocksElapsed: currentBlocksElapsed,
+        });
+
+        remainingToMine = 0n;
+        currentMinted = newMinted;
+      }
+    }
+  }
+
+  return {
+    periods,
+    remainingForNextPeriod: currentMinted,
+  };
+}
+
+// Calculate rate adjustment based on period completion
+function calculateRateAdjustment(
+  currentRate: bigint,
+  blocksElapsed: bigint,
+  hitTarget: boolean,
+  finalMinted?: bigint,
+  target?: bigint
+): bigint {
+  if (hitTarget) {
+    // Over-issuance: rate decreases based on how fast target was hit
+    const factor = Math.max(
+      Number(blocksElapsed) / ADJUSTMENT_PERIOD_TARGET_LENGTH,
+      MAX_RATE_ADJUSTMENT_DOWN
+    );
+    return (currentRate * BigInt(Math.floor(factor * 1000))) / 1000n;
+  } else {
+    // Under-issuance: rate increases based on how much was minted vs target
+    if (!finalMinted || !target || finalMinted === 0n) {
+      return (
+        (currentRate * BigInt(Math.floor(MAX_RATE_ADJUSTMENT_UP * 1000))) /
+        1000n
+      );
+    }
+
+    const factor = Math.min(
+      Number((target * 1000n) / finalMinted) / 1000,
+      MAX_RATE_ADJUSTMENT_UP
+    );
+    return (currentRate * BigInt(Math.floor(factor * 1000))) / 1000n;
+  }
+}
+
 // Predict rate adjustment
 export function predictRateAdjustment(
   fctData: FctDetails, 

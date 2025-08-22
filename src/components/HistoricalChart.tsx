@@ -1,54 +1,35 @@
-import React from 'react'
-import { formatBlockNumber, weiToFct, compact } from '@/utils/format'
-import { useHistoricalPeriods } from '@/hooks/useHistoricalPeriods'
-import { FctDetails } from '@/utils/fct-calculations'
-import { 
-  prepareChartData
-} from '@/utils/historical-helpers'
+import React from "react";
+import { formatBlockNumber, weiToFct, compact } from "@/utils/format";
+import { useHistoricalPeriods } from "@/hooks/useHistoricalPeriods";
 
-interface HistoricalChartProps {
-  currentBlock: bigint
-  fctData: FctDetails | undefined
-  currentPeriod: bigint
-  currentIssued: bigint
-  currentTarget: bigint
-}
+export function HistoricalChart() {
+  const { data: allPeriods } = useHistoricalPeriods(10);
 
-export function HistoricalChart({ 
-  currentBlock,
-  fctData,
-  currentPeriod, 
-  currentIssued, 
-  currentTarget 
-}: HistoricalChartProps) {
-  const { data: historicalPeriods } = useHistoricalPeriods(
-    currentBlock, 
-    fctData,
-    9 // Fetch last 9 periods
-  )
-  
-  // Combine historical data with current period
+  // Convert periods to chart data format
   const allData = React.useMemo(() => {
-    const historical = prepareChartData(historicalPeriods)
-    
-    // Add current period (in progress)
-    const currentData = {
-      periodNumber: Number(currentPeriod),
-      startBlock: undefined as bigint | undefined,
-      endBlock: undefined as bigint | undefined,
-      minted: currentIssued,
-      target: currentTarget,
-      mintedPercent: currentTarget > 0n ? Number((currentIssued * 100n) / currentTarget) : 0,
-      rate: fctData ? fctData.mintRate : 0n,
-      rateChangePct: 0, // N/A for current period
-      reason: 'current' as const,
-      blocksLasted: 0,
-      endReasonText: 'In Progress',
-      durationText: 'Ongoing',
-    }
-    
-    return [...historical, currentData]
-  }, [historicalPeriods, currentPeriod, currentIssued, currentTarget, fctData])
+    if (!allPeriods) return [];
+
+    return allPeriods.map((period) => ({
+      periodNumber: period.periodNumber,
+      startBlock: period.periodStart,
+      endBlock: period.periodEnd,
+      minted: period.minted,
+      target: period.target,
+      mintedPercent: period.mintedPercent,
+      rate: period.rate,
+      rateChangePct: period.rateChangePct || 0,
+      reason: period.reason,
+      blocksLasted: period.blocksLasted,
+      endReasonText: period.isActive
+        ? "In Progress"
+        : period.reason === "over"
+        ? "Hit Target"
+        : "Timed Out",
+      durationText: period.isActive
+        ? "Ongoing"
+        : `${period.blocksLasted} blocks`,
+    }));
+  }, [allPeriods]);
 
   // Find max value for intensity scaling (convert to numbers for comparison)
   const maxValue = Math.max(...allData.map(d => Math.max(weiToFct(d.minted), weiToFct(d.target))))
@@ -73,9 +54,9 @@ export function HistoricalChart({
         {/* Grid of periods */}
         <div className="grid grid-cols-5 gap-2">
           {allData.map((data, index) => {
-            const isCurrentPeriod = index === allData.length - 1
-            const intensity = weiToFct(data.minted) / maxValue
-            
+            const isCurrentPeriod = data.reason === "current";
+            const intensity = weiToFct(data.minted) / maxValue;
+
             return (
               <div 
                 key={`period-${index}`} 
@@ -132,10 +113,7 @@ export function HistoricalChart({
                 
                 {/* Period label below */}
                 <div className="text-center mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {data.startBlock ? 
-                    `${formatBlockNumber(data.startBlock)}` : 
-                    'Now'
-                  }
+                  {formatBlockNumber(data.startBlock)}
                 </div>
               </div>
             )

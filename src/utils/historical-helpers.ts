@@ -1,4 +1,4 @@
-import { HistoricalPeriod } from '@/hooks/useHistoricalPeriods'
+import { Period } from "@/hooks/useHistoricalPeriods";
 
 export function getRateChangeSymbol(changePct: number): string {
   if (changePct > 0.5) return '↑'
@@ -18,9 +18,9 @@ export function formatRateChange(changePct: number): string {
   return `${symbol} ${absPercent}%`
 }
 
-export function getEndReasonText(period: HistoricalPeriod): string {
-  if (period.reason === 'over') {
-    return `Target hit after ${period.blocksLasted} blocks`
+export function getEndReasonText(period: Period): string {
+  if (period.reason === "over") {
+    return `Target hit after ${period.blocksLasted} blocks`;
   } else {
     return `500-block timeout (${period.mintedPercent.toFixed(1)}% of target)`
   }
@@ -34,16 +34,16 @@ export function getPeriodDurationText(blocks: number): string {
 }
 
 // Prepare chart data keeping BigInt values intact
-export function prepareChartData(periods: HistoricalPeriod[] | undefined) {
-  if (!periods) return []
-  return periods.map(period => ({
+export function prepareChartData(periods: Period[] | undefined) {
+  if (!periods) return [];
+  return periods.map((period) => ({
     periodNumber: period.periodNumber,
     startBlock: period.periodStart,
     endBlock: period.periodEnd,
     minted: period.minted, // Keep as BigInt
     target: period.target, // Keep as BigInt
     mintedPercent: period.mintedPercent,
-    rate: period.newRate, // Keep as BigInt
+    rate: period.rate, // Keep as BigInt
     rateChangePct: period.rateChangePct,
     reason: period.reason,
     blocksLasted: period.blocksLasted,
