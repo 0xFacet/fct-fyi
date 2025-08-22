@@ -222,11 +222,11 @@ async function fetchAllPeriods(periodsToFetch: number): Promise<Period[]> {
           const lastPeriod = periods[periods.length - 1];
           if (!lastPeriod.isActive) {
             lastPeriod.rateChangePct =
-              lastPeriod.rate === 0n
+              sandwichedPeriod.rate === 0n
                 ? 0
                 : Number(
-                    ((sandwichedPeriod.rate - lastPeriod.rate) * 10000n) /
-                      lastPeriod.rate
+                    ((lastPeriod.rate - sandwichedPeriod.rate) * 10000n) /
+                      sandwichedPeriod.rate
                   ) / 100;
           }
         }
@@ -272,11 +272,11 @@ async function fetchAllPeriods(periodsToFetch: number): Promise<Period[]> {
       const lastPeriod = periods[periods.length - 1];
       if (!lastPeriod.isActive) {
         lastPeriod.rateChangePct =
-          lastPeriod.rate === 0n
+          periodActiveRate === 0n
             ? 0
             : Number(
-                ((periodActiveRate - lastPeriod.rate) * 10000n) /
-                  lastPeriod.rate
+                ((lastPeriod.rate - periodActiveRate) * 10000n) /
+                  periodActiveRate
               ) / 100;
       }
     }
